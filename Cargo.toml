@@ -1,0 +1,71 @@
+[package]
+name = "day-piece-break"
+publish = false
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+description = "Crash capture, local reports, and opt-in delivery for Day apps"
+repository = "https://github.com/daybrite/day-piece-break"
+license = "MPL-2.0"
+
+# day-piece-break: consent-first crash reporting for Day apps (docs/break.md, DESIGN.md §8.5). An
+# optional crate: an app opts in by depending on it and calling `day_piece_break::Config::new().init()` once at
+# startup. It registers standard crash handlers (a chained panic hook + POSIX signal handlers +,
+# on Android, an uncaught-exception handler), persists a report on abnormal exit, and on the next
+# launch offers the reports for the user to review and, only with an explicit action, upload
+# through a pluggable `Reporter`. Nothing is ever uploaded automatically.
+
+[features]
+# `ui` ships the ready-made consent surface (`consent_banner`), pulling in day-pieces + Fluent.
+# On by default; a headless embedder (a server-side reporter, a custom UI) turns it off.
+default = ["ui"]
+ui = ["dep:day-pieces", "dep:day-l10n", "dep:day-fluent", "dep:fluent-bundle"]
+
+[dependencies]
+day-core = { git = "https://github.com/daybrite/day.git" }
+day-reactive = { git = "https://github.com/daybrite/day.git" }
+# `Lifecycle` (the WillLaunch/WillTerminate phases the sentinel hooks); a leaf crate day-core
+# already pulls in, so naming it directly adds no compiled crate.
+day-spec = { git = "https://github.com/daybrite/day.git" }
+# Device model + OS name/version for the report (headless, tiny).
+day-part-deviceinfo = { git = "https://github.com/daybrite/day.git" }
+# The default upload transport (`RestReporter`) POSTs through the native HTTP stack.
+day-part-http = { git = "https://github.com/daybrite/day.git" }
+
+# Consent UI (feature `ui`).
+day-pieces = { git = "https://github.com/daybrite/day.git", optional = true }
+day-l10n = { git = "https://github.com/daybrite/day.git", optional = true }
+day-fluent = { git = "https://github.com/daybrite/day.git", optional = true }
+# The consent surface's embedded Fluent catalogs (en/fr/ar/zh-CN): the day-lite i18n pattern.
+fluent-bundle = { version = "0.16", optional = true }
+
+# POSIX signal handlers (SIGSEGV/SIGABRT/…): sigaction + sigaltstack + async-signal-safe writes.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+# The subprocess crash harness asserts on child exit signals (SIGABRT/SIGSEGV numbers vary by OS).
+[target.'cfg(unix)'.dev-dependencies]
+libc = "0.2"
+
+# The consent-banner mock e2e mounts the piece under the mock backend and drives it.
+[dev-dependencies]
+day-mock = { git = "https://github.com/daybrite/day.git" }
+day-pieces = { git = "https://github.com/daybrite/day.git" }
+day-spec = { git = "https://github.com/daybrite/day.git" }
+
+# Android uncaught-exception handler: a Java shim (staged below) installed via day-android's JNI.
+[target.'cfg(target_os = "android")'.dependencies]
+day-android = { git = "https://github.com/daybrite/day.git" }
+
+# --- Android backend contribution (docs/extending.md) ---
+# Stages this crate's Java (the `Thread.setDefaultUncaughtExceptionHandler` shim) into the app's
+# Gradle build. Registers no renderer, the same headless-part mechanism day-part-battery uses.
+[package.metadata.day.android]
+java = ["platform/android/java"]
+
+[package.metadata.day]
+compat = "0.4"
+
+[[test]]
+name = "banner"
+required-features = ["ui"]

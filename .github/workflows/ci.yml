@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "20 6 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  host:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo clippy --all-targets --no-default-features -- -D warnings
+      - run: cargo test
+      - run: cargo test --no-default-features
+
+  # The UI is pure composition; these compile the OS-specific capture and transport paths.
+  cross-check:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-15, target: aarch64-apple-ios, day-target: ios-uikit }
+          - { os: ubuntu-latest, target: aarch64-linux-android, day-target: android-mdc }
+          - { os: ubuntu-latest, target: aarch64-unknown-linux-ohos, day-target: harmony-arkui }
+          - { os: ubuntu-latest, target: wasm32-unknown-unknown, day-target: web-dom }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: daybrite/actions/.github/actions/setup-day-deps@main
+        with:
+          target: ${{ matrix.day-target }}
+          pack: "false"
+      - run: cargo check --target ${{ matrix.target }}
+      - run: cargo check --no-default-features --target ${{ matrix.target }}
