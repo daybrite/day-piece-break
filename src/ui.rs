@@ -81,21 +81,29 @@ fn banner_body(
         column((
             label(t("crash-title"))
                 .font(Font::Headline)
-                .id("dbreak-title"),
+                .id(day_core::id!(dbreak_title)),
             label(t("crash-body")).font(Font::Footnote),
             when(
                 move || !status.get().is_empty(),
-                move || label(status.get()).font(Font::Callout).id("dbreak-status"),
+                move || {
+                    label(status.get())
+                        .font(Font::Callout)
+                        .id(day_core::id!(dbreak_status))
+                },
             ),
             when(move || expanded.get(), report_body)
                 .any()
-                .id("dbreak-report"),
+                .id(day_core::id!(dbreak_report)),
             row((
-                button(t("crash-view")).action(toggle).id("dbreak-view"),
-                button(t("crash-send")).action(on_send).id("dbreak-send"),
+                button(t("crash-view"))
+                    .action(toggle)
+                    .id(day_core::id!(dbreak_view)),
+                button(t("crash-send"))
+                    .action(on_send)
+                    .id(day_core::id!(dbreak_send)),
                 button(t("crash-discard"))
                     .action(on_discard)
-                    .id("dbreak-discard"),
+                    .id(day_core::id!(dbreak_discard)),
             ))
             .spacing(8.0),
             when(
@@ -109,6 +117,6 @@ fn banner_body(
         .spacing(8.0)
         .any(),
     )
-    .id("dbreak-banner")
+    .id(day_core::id!(dbreak_banner))
     .any()
 }
