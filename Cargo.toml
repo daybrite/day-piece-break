@@ -64,7 +64,7 @@ day-android = { git = "https://github.com/daybrite/day.git" }
 java = ["platform/android/java"]
 
 [package.metadata.day]
-compat = "0.4"
+compat = "0.5"
 
 [[test]]
 name = "banner"

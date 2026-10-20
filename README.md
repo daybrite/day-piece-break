@@ -41,7 +41,7 @@ reports and automation continue working. Reports identify the linked runtime usi
 `day_core::VERSION`, rather than this independently versioned package's version.
 
 Dependencies use Day's bare canonical git URL, letting the app's lockfile select one Day
-revision for the whole graph. This initial release targets Day 0.4 with the `day_core::VERSION`
+revision for the whole graph. This initial release targets Day 0.5 with the `day_core::VERSION`
 API. No library lockfile is committed; CI checks compatibility against Day's current main.
 On wasm, initialization and capture are no-ops. Native signal capture is Unix-only; Windows
 captures Rust panics. See the reference for other platform limits.

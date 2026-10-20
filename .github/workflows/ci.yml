@@ -42,7 +42,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-      - uses: daybrite/actions/.github/actions/setup-day-deps@main
+      - uses: daybrite/actions/.github/actions/setup-day-deps@v1
         with:
           target: ${{ matrix.day-target }}
           pack: "false"

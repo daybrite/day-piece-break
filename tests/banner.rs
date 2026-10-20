@@ -9,16 +9,12 @@
 use day_mock::{MockProbe, MockToolkit};
 use day_piece_break::Report;
 use day_reactive::flush_sync;
-use day_spec::{Event, NodeId, Size, WindowOptions};
+use day_spec::{Event, NodeId, WindowOptions};
 
 fn boot(root: impl FnOnce() -> day_core::AnyPiece + 'static) -> MockProbe {
     day_core::uninstall_tree();
     let (mock, probe) = MockToolkit::new();
-    let options = WindowOptions {
-        title: "test".into(),
-        size: Size::new(400.0, 640.0),
-        ..Default::default()
-    };
+    let options = WindowOptions::default().title("test").size(400.0, 640.0);
     day_core::launch_with(mock, options, root);
     probe
 }
