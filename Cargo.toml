@@ -19,7 +19,7 @@ license = "MPL-2.0"
 # `ui` ships the ready-made consent surface (`consent_banner`), pulling in day-pieces + Fluent.
 # On by default; a headless embedder (a server-side reporter, a custom UI) turns it off.
 default = ["ui"]
-ui = ["dep:day-pieces", "dep:day-l10n", "dep:day-fluent", "dep:fluent-bundle"]
+ui = ["dep:day-pieces", "dep:day-fluent", "dep:day-build"]
 
 [dependencies]
 day-core = { git = "https://github.com/daybrite/day.git" }
@@ -34,10 +34,7 @@ day-part-http = { git = "https://github.com/daybrite/day.git" }
 
 # Consent UI (feature `ui`).
 day-pieces = { git = "https://github.com/daybrite/day.git", optional = true }
-day-l10n = { git = "https://github.com/daybrite/day.git", optional = true }
 day-fluent = { git = "https://github.com/daybrite/day.git", optional = true }
-# The consent surface's embedded Fluent catalogs (en/fr/ar/zh-CN): the day-lite i18n pattern.
-fluent-bundle = { version = "0.16", optional = true }
 
 # POSIX signal handlers (SIGSEGV/SIGABRT/…): sigaction + sigaltstack + async-signal-safe writes.
 [target.'cfg(unix)'.dependencies]
@@ -69,3 +66,7 @@ compat = "0.5"
 [[test]]
 name = "banner"
 required-features = ["ui"]
+
+[build-dependencies]
+# Generates the consent surface's `res::str` from resource/locales/ (feature `ui`).
+day-build = { git = "https://github.com/daybrite/day.git", optional = true }

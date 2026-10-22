@@ -12,6 +12,10 @@
 //! lookup and finally to `"unknown"`.
 
 fn main() {
+    // The consent surface's private Fluent catalog (resource/locales/<lang>/app.ftl) becomes
+    // `ui::res` through `day_fluent::locales!()`.
+    #[cfg(feature = "ui")]
+    day_build::generate_locales().expect("day-build: private locales");
     for var in ["DAY_APP_ID", "DAY_APP_VERSION", "DAY_APP_BUILD"] {
         println!("cargo:rerun-if-env-changed={var}");
         if let Ok(val) = std::env::var(var) {

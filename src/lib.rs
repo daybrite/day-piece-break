@@ -26,8 +26,6 @@ day_reactive::tls_root! {
     // `hook` is not compiled on wasm32 (see the module below), so its slot is not either.
     #[cfg(not(target_arch = "wasm32"))]
     hook: crate::hook::TlsGroupSlots,
-    #[cfg(feature = "ui")]
-    i18n: crate::i18n::TlsGroupSlots,
     root: crate::TlsGroupSlots,
 }
 
@@ -50,8 +48,6 @@ mod signals_windows;
 #[cfg(target_os = "android")]
 mod java_android;
 
-#[cfg(feature = "ui")]
-mod i18n;
 #[cfg(feature = "ui")]
 mod ui;
 
