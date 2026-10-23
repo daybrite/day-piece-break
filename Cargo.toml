@@ -28,7 +28,7 @@ day-reactive = { git = "https://github.com/daybrite/day.git" }
 # already pulls in, so naming it directly adds no compiled crate.
 day-spec = { git = "https://github.com/daybrite/day.git" }
 # Device model + OS name/version for the report (headless, tiny).
-day-part-deviceinfo = { git = "https://github.com/daybrite/day.git" }
+day-part-device = { git = "https://github.com/daybrite/day.git" }
 # The default upload transport (`RestReporter`) POSTs through the native HTTP stack.
 day-part-http = { git = "https://github.com/daybrite/day.git" }
 
@@ -56,7 +56,7 @@ day-android = { git = "https://github.com/daybrite/day.git" }
 
 # --- Android backend contribution (docs/extending.md) ---
 # Stages this crate's Java (the `Thread.setDefaultUncaughtExceptionHandler` shim) into the app's
-# Gradle build. Registers no renderer, the same headless-part mechanism day-part-battery uses.
+# Gradle build. Registers no renderer, the same headless-part mechanism day-part-device uses.
 [package.metadata.day.android]
 java = ["platform/android/java"]
 

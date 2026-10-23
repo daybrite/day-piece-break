@@ -254,7 +254,7 @@ impl Config {
             store::reconcile(&dir, &sid, pid, &ctx, self.max_reports, self.keep_contained);
 
         // Static context for this session's sentinel.
-        let device = day_part_deviceinfo::get();
+        let device = day_part_device::info::get();
         let backend = day_core::backend_name().unwrap_or("").to_string();
         let locale = current_locale();
         let sentinel_fields = vec![
