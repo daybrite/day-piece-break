@@ -50,9 +50,9 @@ day-mock = { git = "https://github.com/daybrite/day.git" }
 day-pieces = { git = "https://github.com/daybrite/day.git" }
 day-spec = { git = "https://github.com/daybrite/day.git" }
 
-# Android uncaught-exception handler: a Java shim (staged below) installed via day-android's JNI.
+# Android uncaught-exception handler: a Java shim (staged below) installed via day-android-runtime's JNI.
 [target.'cfg(target_os = "android")'.dependencies]
-day-android = { git = "https://github.com/daybrite/day.git" }
+day-android-runtime = { git = "https://github.com/daybrite/day.git" }
 
 # --- Android backend contribution (docs/extending.md) ---
 # Stages this crate's Java (the `Thread.setDefaultUncaughtExceptionHandler` shim) into the app's

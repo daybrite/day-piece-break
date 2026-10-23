@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 // day-piece-break's Android crash layer: a headless shim (no UI), bundled with the crate and folded
-// into the app's Gradle build via [package.metadata.day.android], with no edits to day-android.
+// into the app's Gradle build via [package.metadata.day.android], with no edits to day-android-runtime.
 // It installs a default uncaught-exception handler that writes a `java-<sid>.kv` artifact directly
 // to day-piece-break's report dir (the same line-oriented key=value format the Rust reconciler reads,
 // src/report.rs), then chains to the previous handler so the system still shows
