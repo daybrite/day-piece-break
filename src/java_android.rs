@@ -6,18 +6,18 @@
 //! that no JNI transition happens during a crash; it writes a `java-<sid>.kv` artifact directly,
 //! in the same kv format [`crate::store`] reconciles.
 
-use day_android_runtime::jni::objects::JString;
-use day_android_runtime::{DayRuntime, java, java_string, with_env};
+use day_platform_android::jni::objects::JString;
+use day_platform_android::{DayRuntime, java, java_string, with_env};
 
 // The uncaught-exception handler's Java half (platform/android/java/.../crash/DayBreak.java).
-day_android_runtime::java_class! {
+day_platform_android::java_class! {
     DayBreak => dev.daybrite.day.crash.DayBreak,
     methods {
         static fn install(dir: JString, sid: JString),
     },
 }
 
-/// `Context.getFilesDir().getAbsolutePath()` via day-android-runtime's bridge (resolved on the main
+/// `Context.getFilesDir().getAbsolutePath()` via day-platform-android's bridge (resolved on the main
 /// thread at init).
 pub(crate) fn files_dir() -> Option<std::path::PathBuf> {
     let path = with_env(|env| java_string(env, DayRuntime::filesDirPath))?;

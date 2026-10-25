@@ -37,7 +37,7 @@ use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicIsize, AtomicU32, AtomicU64, AtomicUsize, Ordering};
 
 // ---- Win32 surface ---------------------------------------------------------------------------
-// Declared inline rather than pulling in a bindings crate: day-piece-break is a leaf that an app opts
+// Declared inline rather than pulling in a bindings crate: day-piece-crash-reporter is a leaf that an app opts
 // into, and this is a dozen symbols.
 
 #[repr(C)]

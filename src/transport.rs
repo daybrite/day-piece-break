@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 //! Pluggable upload transports (docs/break.md). A [`Reporter`] is the only path a report takes off
-//! the device, and it is always driven by app code from a user action; day-piece-break never uploads on
+//! the device, and it is always driven by app code from a user action; day-piece-crash-reporter never uploads on
 //! its own. Three built-ins cover the common shapes; an app can implement its own.
 
 use crate::report::Report;

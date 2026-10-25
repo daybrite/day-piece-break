@@ -1,4 +1,4 @@
-# day-piece-break consent surface (en), the source catalog.
+# day-piece-crash-reporter consent surface (en), the source catalog.
 crash_title = A previous run crashed
 crash_body = The app closed unexpectedly. You can review the report and choose whether to send it.
 crash_view = View report

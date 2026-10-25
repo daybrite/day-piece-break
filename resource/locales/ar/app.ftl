@@ -1,4 +1,4 @@
-# day-piece-break consent surface (ar).
+# day-piece-crash-reporter consent surface (ar).
 crash_title = تعطّل تشغيل سابق
 crash_body = أُغلِق التطبيق بشكل غير متوقع. يمكنك مراجعة التقرير واختيار ما إذا كنت تريد إرساله.
 crash_view = عرض التقرير

@@ -13,7 +13,7 @@
 
 fn main() {
     // The consent surface's private Fluent catalog (resource/locales/<lang>/app.ftl) becomes
-    // `ui::res` through `day_fluent::locales!()`.
+    // `ui::res` through `day_localization_ui::locales!()`.
     #[cfg(feature = "ui")]
     day_build::generate_locales().expect("day-build: private locales");
     for var in ["DAY_APP_ID", "DAY_APP_VERSION", "DAY_APP_BUILD"] {

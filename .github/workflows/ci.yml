@@ -33,7 +33,7 @@ jobs:
       matrix:
         include:
           - { os: macos-15, target: aarch64-apple-ios, day-target: ios-uikit }
-          - { os: ubuntu-latest, target: aarch64-linux-android, day-target: android-mdc }
+          - { os: ubuntu-latest, target: aarch64-linux-android, day-target: android-material }
           - { os: ubuntu-latest, target: aarch64-unknown-linux-ohos, day-target: harmony-arkui }
           - { os: ubuntu-latest, target: wasm32-unknown-unknown, day-target: web-dom }
     runs-on: ${{ matrix.os }}

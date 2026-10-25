@@ -4,7 +4,7 @@
 //! Subprocess crash harness: the real end-to-end path. A real crash needs a real process (you
 //! cannot segfault the test runner and survive), so each crash runs in a child spawned as
 //! `current_exe()` filtered to the single [`child_entry`] test. The child reads `DAY_BREAK_TEST_MODE`,
-//! arms day-piece-break at `DAY_BREAK_TEST_DIR`, and crashes (or reconciles + prints). The parent asserts
+//! arms day-piece-crash-reporter at `DAY_BREAK_TEST_DIR`, and crashes (or reconciles + prints). The parent asserts
 //! the child died the expected way, then runs a `reconcile` child and asserts the finalized report.
 //!
 //! Note on the panic case: libtest wraps each test in `catch_unwind`, so a child `panic!` is caught
@@ -23,7 +23,7 @@ fn child_entry() {
         return;
     };
     let dir = std::env::var("DAY_BREAK_TEST_DIR").expect("child needs DAY_BREAK_TEST_DIR");
-    day_piece_break::Config::new()
+    day_piece_crash_reporter::Config::new()
         .dir(&dir)
         .app_id("dev.test.break")
         .init()
@@ -38,10 +38,10 @@ fn child_entry() {
             unreachable!("segv did not fault");
         },
         "reconcile" => {
-            let ls = day_piece_break::last_session();
-            let n = day_piece_break::report_paths().len();
+            let ls = day_piece_crash_reporter::last_session();
+            let n = day_piece_crash_reporter::report_paths().len();
             println!("RECONCILE kind={} reports={n}", describe(&ls));
-            let json = day_piece_break::report_paths()
+            let json = day_piece_crash_reporter::report_paths()
                 .first()
                 .and_then(|p| std::fs::read_to_string(p).ok())
                 .unwrap_or_default();
@@ -53,11 +53,13 @@ fn child_entry() {
     }
 }
 
-fn describe(ls: &day_piece_break::SessionEnd) -> String {
+fn describe(ls: &day_piece_crash_reporter::SessionEnd) -> String {
     match ls {
-        day_piece_break::SessionEnd::Clean => "clean".into(),
-        day_piece_break::SessionEnd::Unknown => "unknown".into(),
-        day_piece_break::SessionEnd::Crashed { kind, .. } => format!("crashed:{}", kind.as_str()),
+        day_piece_crash_reporter::SessionEnd::Clean => "clean".into(),
+        day_piece_crash_reporter::SessionEnd::Unknown => "unknown".into(),
+        day_piece_crash_reporter::SessionEnd::Crashed { kind, .. } => {
+            format!("crashed:{}", kind.as_str())
+        }
     }
 }
 

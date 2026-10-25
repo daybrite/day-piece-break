@@ -1,16 +1,16 @@
 // Copyright © The Daybrite Project
 // SPDX-License-Identifier: MPL-2.0
 
-//! day-piece-break: consent-first crash reporting for Day apps (docs/break.md, DESIGN.md §8.5).
+//! day-piece-crash-reporter: consent-first crash reporting for Day apps (docs/break.md, DESIGN.md §8.5).
 //!
 //! An optional crate. An app opts in with one call, as early as possible in startup:
 //!
 //! ```no_run
-//! day_piece_break::Config::new().max_reports(5).init().ok();
+//! day_piece_crash_reporter::Config::new().max_reports(5).init().ok();
 //! // … day::launch(WindowOptions::default(), app_root) …
 //! ```
 //!
-//! day-piece-break then registers a chained panic hook and (on Unix) native signal handlers, writes a
+//! day-piece-crash-reporter then registers a chained panic hook and (on Unix) native signal handlers, writes a
 //! session sentinel, and on the next launch reconciles any leftover artifacts into finalized JSON
 //! reports. It never uploads anything on its own; [`send`] (the only network path) is called by
 //! the app, from a user action on a disclosure surface. See [`Config`], [`last_session`],
@@ -406,7 +406,7 @@ fn load_pending() -> Vec<ReportMeta> {
 day_reactive::tls_slots! {
     root;
     /// The pending-list signal. Held in a thread-local because a `Signal` is main-thread-affine
-    /// (`!Send`/`!Sync`) and cannot live in a `static`, the same reason day-l10n keeps its global
+    /// (`!Send`/`!Sync`) and cannot live in a `static`, the same reason day-localization keeps its global
     /// locale signal thread-locally.
     static PENDING: std::cell::RefCell<Option<Signal<Vec<ReportMeta>>>> = const { std::cell::RefCell::new(None) };
 

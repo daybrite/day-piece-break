@@ -1,5 +1,5 @@
 [package]
-name = "day-piece-break"
+name = "day-piece-crash-reporter"
 publish = false
 version = "0.1.0"
 edition = "2024"
@@ -8,8 +8,8 @@ description = "Crash capture, local reports, and opt-in delivery for Day apps"
 repository = "https://github.com/daybrite/day-piece-break"
 license = "MPL-2.0"
 
-# day-piece-break: consent-first crash reporting for Day apps (docs/break.md, DESIGN.md §8.5). An
-# optional crate: an app opts in by depending on it and calling `day_piece_break::Config::new().init()` once at
+# day-piece-crash-reporter: consent-first crash reporting for Day apps (docs/break.md, DESIGN.md §8.5). An
+# optional crate: an app opts in by depending on it and calling `day_piece_crash_reporter::Config::new().init()` once at
 # startup. It registers standard crash handlers (a chained panic hook + POSIX signal handlers +,
 # on Android, an uncaught-exception handler), persists a report on abnormal exit, and on the next
 # launch offers the reports for the user to review and, only with an explicit action, upload
@@ -19,7 +19,7 @@ license = "MPL-2.0"
 # `ui` ships the ready-made consent surface (`consent_banner`), pulling in day-pieces + Fluent.
 # On by default; a headless embedder (a server-side reporter, a custom UI) turns it off.
 default = ["ui"]
-ui = ["dep:day-pieces", "dep:day-fluent", "dep:day-build"]
+ui = ["dep:day-pieces", "dep:day-localization-ui", "dep:day-build"]
 
 [dependencies]
 day-core = { git = "https://github.com/daybrite/day.git" }
@@ -34,7 +34,7 @@ day-part-http = { git = "https://github.com/daybrite/day.git" }
 
 # Consent UI (feature `ui`).
 day-pieces = { git = "https://github.com/daybrite/day.git", optional = true }
-day-fluent = { git = "https://github.com/daybrite/day.git", optional = true }
+day-localization-ui = { git = "https://github.com/daybrite/day.git", optional = true }
 
 # POSIX signal handlers (SIGSEGV/SIGABRT/…): sigaction + sigaltstack + async-signal-safe writes.
 [target.'cfg(unix)'.dependencies]
@@ -50,9 +50,9 @@ day-mock = { git = "https://github.com/daybrite/day.git" }
 day-pieces = { git = "https://github.com/daybrite/day.git" }
 day-spec = { git = "https://github.com/daybrite/day.git" }
 
-# Android uncaught-exception handler: a Java shim (staged below) installed via day-android-runtime's JNI.
+# Android uncaught-exception handler: a Java shim (staged below) installed via day-platform-android's JNI.
 [target.'cfg(target_os = "android")'.dependencies]
-day-android-runtime = { git = "https://github.com/daybrite/day.git" }
+day-platform-android = { git = "https://github.com/daybrite/day.git" }
 
 # --- Android backend contribution (docs/extending.md) ---
 # Stages this crate's Java (the `Thread.setDefaultUncaughtExceptionHandler` shim) into the app's
@@ -61,7 +61,7 @@ day-android-runtime = { git = "https://github.com/daybrite/day.git" }
 java = ["platform/android/java"]
 
 [package.metadata.day]
-compat = "0.5"
+compat = "0.6"
 
 [[test]]
 name = "banner"

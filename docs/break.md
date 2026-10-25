@@ -1,5 +1,5 @@
 ---
-title: "day-piece-break: crash reporting"
+title: "day-piece-crash-reporter: crash reporting"
 description: "Crash capture, report storage, delivery transports, and testing the reporting pipeline."
 ---
 
@@ -8,16 +8,16 @@ Copyright © The Daybrite Project
 SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
-# day-piece-break: crash reporting
+# day-piece-crash-reporter: crash reporting
 
-> **Status: implemented** (standalone `day-piece-break` repository). The panic hook, POSIX signal handlers, session
+> **Status: implemented** (standalone `day-piece-crash-reporter` repository). The panic hook, POSIX signal handlers, session
 > sentinel, next-launch reconciliation, the report schema + JSON round-trip, the app-identity
 > plumbing, the pluggable transports, and the optional reporting UI (localized en/fr/ar/zh-CN) are
 > built and tested (unit + a subprocess crash harness + a mock-backend banner e2e, on macOS/Linux
 > hosts). The Android uncaught-exception layer and on-device verification track in [Day architecture §8.5](https://github.com/daybrite/day/blob/main/DESIGN.md#85-panics-and-crashes).
 > This file is the normative reference for the whole design.
 
-day-piece-break captures crashes, stores reports on the device, and provides APIs for inspecting,
+day-piece-crash-reporter captures crashes, stores reports on the device, and provides APIs for inspecting,
 discarding, and sending them. It registers crash handlers and finalizes their reports on the
 next launch. The app controls when to send a report and chooses the delivery transport: an HTTP
 endpoint, a GitHub issue form, or email.
@@ -29,7 +29,7 @@ Apps can use the reporting APIs with their own interface or without the built-in
 
 ```toml
 [dependencies]
-day-piece-break = { git = "https://github.com/daybrite/day-piece-break" }
+day-piece-crash-reporter = { git = "https://github.com/daybrite/day-piece-break" }
 ```
 
 The default `ui` feature includes `consent_banner()` (View / Send / Discard, destination
@@ -39,7 +39,7 @@ with your own UI. The banner composes Day pieces, so it needs no backend feature
 Arm capture as early as possible (the first thing in the app entry, before `day::launch`):
 
 ```rust
-day_piece_break::Config::new()
+day_piece_crash_reporter::Config::new()
     .max_reports(5)                    // rotation (default 5)
     .redact(|msg| { /* scrub secrets from panic messages */ })
     .init()
@@ -51,10 +51,10 @@ day::launch(WindowOptions::default(), app_root);
 On the next launch, check how the previous session ended:
 
 ```rust
-match day_piece_break::last_session() {
-    day_piece_break::SessionEnd::Crashed { .. } => handle_pending_reports(),  // app-defined report handling
-    day_piece_break::SessionEnd::Unknown => { /* an OS kill — not a crash; usually ignore */ }
-    day_piece_break::SessionEnd::Clean => {}
+match day_piece_crash_reporter::last_session() {
+    day_piece_crash_reporter::SessionEnd::Crashed { .. } => handle_pending_reports(),  // app-defined report handling
+    day_piece_crash_reporter::SessionEnd::Unknown => { /* an OS kill — not a crash; usually ignore */ }
+    day_piece_crash_reporter::SessionEnd::Clean => {}
 }
 ```
 
@@ -80,7 +80,7 @@ are covered by the signal handlers).
 ### Panic vs. contained panic
 
 day-core contains panics at its trampoline boundaries (the event pump, posted main-thread tasks)
-so the app survives ([Day architecture §8.5](https://github.com/daybrite/day/blob/main/DESIGN.md#85-panics-and-crashes), §8). day-piece-break's hook fires for *every* panic, then day-core
+so the app survives ([Day architecture §8.5](https://github.com/daybrite/day/blob/main/DESIGN.md#85-panics-and-crashes), §8). day-piece-crash-reporter's hook fires for *every* panic, then day-core
 notifies it (`day_core::set_contained_panic_observer`) when it catches one, so a contained panic
 is recorded as a **non-fatal** `contained` report, distinct from a crash. Set
 `Config::keep_contained(false)` to drop them.
@@ -94,7 +94,7 @@ epoch, save previous dispositions). The handler only formats integers into a fix
 `write(2)`s them, and **chains**: it restores the previous disposition and either re-raises
 (abort/trap) or returns so the faulting instruction re-executes and the OS crash reporter still
 runs. This chaining preserves Android ART's `libsigchain` and HarmonyOS FaultLoggerd, so the
-platform's tombstone/faultlog is still produced alongside day-piece-break's report.
+platform's tombstone/faultlog is still produced alongside day-piece-crash-reporter's report.
 
 ## The report (schema 1)
 
@@ -127,7 +127,7 @@ The report carries no user data beyond the fields listed. `signal` is present on
 ### App identity and symbolication
 
 Day.toml's `[app]` id/version/build are not otherwise in the binary, so `day build`/`day launch`
-export them (`DAY_APP_ID`/`DAY_APP_VERSION`/`DAY_APP_BUILD`) and day-piece-break's `build.rs` bakes them
+export them (`DAY_APP_ID`/`DAY_APP_VERSION`/`DAY_APP_BUILD`) and day-piece-crash-reporter's `build.rs` bakes them
 in; a bare `cargo` build without the CLI falls back to a runtime env lookup, then `"unknown"`.
 `day.version` is the linked framework version (`day_core::VERSION`), independent of this
 package's version; `day.backend` is `day_core::backend_name()`.
@@ -135,12 +135,12 @@ package's version; `day.backend` is `day_core::backend_name()`.
 For a native fault, `signal.pc - signal.slide` is the module-relative address to symbolize offline
 against the shipped binary. The release profile ships no debug info by default, so backtraces
 carry symbol names but not `file:line`; an app that wants line tables in release adds, in **its
-own** workspace, `[profile.release] debug = "line-tables-only"` (day-piece-break does not change the
+own** workspace, `[profile.release] debug = "line-tables-only"` (day-piece-crash-reporter does not change the
 global profile).
 
 ## Session end and the sentinel
 
-At `init` day-piece-break writes a session sentinel and removes it on `Lifecycle::WillTerminate` (a
+At `init` day-piece-crash-reporter writes a session sentinel and removes it on `Lifecycle::WillTerminate` (a
 clean exit). WillTerminate is reliable on desktop but best-effort on mobile (it does not fire on a
 crash or an OS kill), so the reconciler treats a leftover sentinel **with no handler-written
 artifact** as `SessionEnd::Unknown` (an OS kill or power loss), never a crash. Only a
@@ -175,7 +175,7 @@ Built-ins:
 
 ## Testing
 
-`cargo test -p day-piece-break` covers the kv/JSON codecs, the reconcile matrix, rotation, and panic-hook
+`cargo test -p day-piece-crash-reporter` covers the kv/JSON codecs, the reconcile matrix, rotation, and panic-hook
 chaining in-process, plus a **subprocess crash harness** (`tests/crash.rs`) that re-executes the
 test binary to actually panic / abort / segfault a child and asserts the finalized report (run on
 macOS and Linux CI hosts). On-device capture (Android UEH, iOS/HarmonyOS signals) is verified
@@ -187,4 +187,4 @@ through the showcase "Crash Reporting" page and its dayscript ([Day scripting re
 Users should always be fully informed about any information leaving their device, including
 what a report contains and where it will be sent. We recommend making reporting fully opt-in:
 let users review the information and explicitly choose whether to share it. This is a
-recommendation for apps using day-piece-break, not a requirement enforced by the framework.
+recommendation for apps using day-piece-crash-reporter, not a requirement enforced by the framework.

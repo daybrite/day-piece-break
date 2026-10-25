@@ -27,7 +27,7 @@ day_reactive::tls_slots! {
 static INSTALLED: AtomicBool = AtomicBool::new(false);
 
 /// Install the chained panic hook. Idempotent; preserves the previous hook (default stderr print,
-/// or an earlier reporter) so day-piece-break composes rather than replaces.
+/// or an earlier reporter) so day-piece-crash-reporter composes rather than replaces.
 pub(crate) fn install() {
     if INSTALLED.swap(true, Ordering::SeqCst) {
         return;

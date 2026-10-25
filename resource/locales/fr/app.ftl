@@ -1,4 +1,4 @@
-# day-piece-break consent surface (fr).
+# day-piece-crash-reporter consent surface (fr).
 crash_title = Un lancement précédent a planté
 crash_body = L'application s'est fermée de façon inattendue. Vous pouvez consulter le rapport et choisir de l'envoyer.
 crash_view = Voir le rapport

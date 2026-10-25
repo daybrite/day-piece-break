@@ -1,4 +1,4 @@
-# day-piece-break consent surface (zh-CN).
+# day-piece-crash-reporter consent surface (zh-CN).
 crash_title = 上次运行发生崩溃
 crash_body = 应用意外退出。您可以查看报告并选择是否发送。
 crash_view = 查看报告

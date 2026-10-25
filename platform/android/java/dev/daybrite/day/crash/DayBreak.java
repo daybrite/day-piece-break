@@ -1,10 +1,10 @@
 // Copyright © The Daybrite Project
 // SPDX-License-Identifier: MPL-2.0
 
-// day-piece-break's Android crash layer: a headless shim (no UI), bundled with the crate and folded
-// into the app's Gradle build via [package.metadata.day.android], with no edits to day-android-runtime.
+// day-piece-crash-reporter's Android crash layer: a headless shim (no UI), bundled with the crate and folded
+// into the app's Gradle build via [package.metadata.day.android], with no edits to day-platform-android.
 // It installs a default uncaught-exception handler that writes a `java-<sid>.kv` artifact directly
-// to day-piece-break's report dir (the same line-oriented key=value format the Rust reconciler reads,
+// to day-piece-crash-reporter's report dir (the same line-oriented key=value format the Rust reconciler reads,
 // src/report.rs), then chains to the previous handler so the system still shows
 // its dialog and kills the process. Writing the file from Java (not through JNI) keeps the crash
 // path off a second failure surface: the JVM is wounded but a file write is simple and local.
@@ -25,7 +25,7 @@ public final class DayBreak {
     private static volatile String sid;
     private static Thread.UncaughtExceptionHandler prev;
 
-    /** Called once from Rust at init (day_piece_break::java_android::install) on the main thread. */
+    /** Called once from Rust at init (day_piece_crash_reporter::java_android::install) on the main thread. */
     public static void install(String reportDir, String sessionId) {
         dir = reportDir;
         sid = sessionId;

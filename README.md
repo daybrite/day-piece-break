@@ -1,4 +1,4 @@
-# day-piece-break
+# day-piece-crash-reporter
 
 Crash capture and reporting UI for [Day](https://daybrite.dev) apps. Captures Rust panics,
 Unix signals, and Android uncaught Java exceptions; reconciles reports on the next launch;
@@ -7,18 +7,18 @@ Nothing is uploaded automatically.
 
 ```toml
 [dependencies]
-day-piece-break = { git = "https://github.com/daybrite/day-piece-break" }
+day-piece-crash-reporter = { git = "https://github.com/daybrite/day-piece-break" }
 ```
 
 Initialize before `day::launch`:
 
 ```rust
-let _ = day_piece_break::Config::new()
-    .reporter(day_piece_break::EmailReporter::new("support@example.com"))
+let _ = day_piece_crash_reporter::Config::new()
+    .reporter(day_piece_crash_reporter::EmailReporter::new("support@example.com"))
     .init();
 ```
 
-Embed `day_piece_break::consent_banner()` in your root's layout. It appears when a report is
+Embed `day_piece_crash_reporter::consent_banner()` in your root's layout. It appears when a report is
 pending and offers the full report, destination disclosure, submission status, and dismissal.
 The UI is ordinary Day composition, so it works with the app's selected backend without
 additional backend feature flags. Its embedded translations cover English, French, Arabic,
@@ -32,7 +32,7 @@ the `Reporter`, `RestReporter`, `GithubIssueReporter`, and `EmailReporter` APIs 
 ## Compatibility and migration
 
 Extracted from `day/crates/day-break` under MPL-2.0. Rename Rust references from `day_break::`
-to `day_piece_break::`, or use Cargo's `package = "day-piece-break"` dependency alias to keep
+to `day_piece_crash_reporter::`, or use Cargo's `package = "day-piece-crash-reporter"` dependency alias to keep
 an existing import name. The API otherwise stays the same.
 
 The `day-break` report directory, schema-1 JSON, `DAY_BREAK_*` environment variables,
@@ -61,7 +61,7 @@ cargo fmt --all -- --check
 The subprocess tests deliberately crash child processes and verify report recovery; the
 mock UI test drives the consent banner. CI runs both feature configurations on macOS, Linux,
 and Windows, and compile-checks iOS, Android, HarmonyOS, and web. Changes to this package can
-be tested in Day-Showcase using `day patch --local ../day-piece-break`.
+be tested in Day-Showcase using `day patch --local ../day-piece-crash-reporter`.
 
 ## Publishing the extraction
 

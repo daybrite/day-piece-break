@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: MPL-2.0
 
 //! Mock-backend e2e for the consent banner (feature `ui`, on by default). Seeds a finalized report
-//! on disk, arms day-piece-break, mounts `consent_banner` under the mock toolkit, and asserts it discloses
+//! on disk, arms day-piece-crash-reporter, mounts `consent_banner` under the mock toolkit, and asserts it discloses
 //! the report and that Discard removes it. The full cross-platform drive is the showcase page's
 //! dayscript (M4); this pins the piece wiring in-process.
 
 use day_mock::{MockProbe, MockToolkit};
-use day_piece_break::Report;
+use day_piece_crash_reporter::Report;
 use day_reactive::flush_sync;
 use day_spec::{Event, NodeId, WindowOptions};
 
@@ -61,13 +61,13 @@ fn banner_discloses_a_pending_report_and_discard_clears_it() {
     };
     std::fs::write(dir.join("reports/report-1000.json"), report.to_json()).unwrap();
 
-    day_piece_break::Config::new()
+    day_piece_crash_reporter::Config::new()
         .dir(&dir)
         .app_id("dev.test.banner")
         .init()
         .expect("init");
 
-    let probe = boot(day_piece_break::consent_banner);
+    let probe = boot(day_piece_crash_reporter::consent_banner);
     flush_sync();
 
     // The banner discloses the crash (en title) and the report body once expanded.
