@@ -7,7 +7,7 @@ Nothing is uploaded automatically.
 
 ```toml
 [dependencies]
-day-piece-crash-reporter = { git = "https://github.com/daybrite/day-piece-break" }
+day-piece-crash-reporter = "0.1"
 ```
 
 Initialize before `day::launch`:

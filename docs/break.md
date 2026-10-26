@@ -29,7 +29,7 @@ Apps can use the reporting APIs with their own interface or without the built-in
 
 ```toml
 [dependencies]
-day-piece-crash-reporter = { git = "https://github.com/daybrite/day-piece-break" }
+day-piece-crash-reporter = "0.1"
 ```
 
 The default `ui` feature includes `consent_banner()` (View / Send / Discard, destination

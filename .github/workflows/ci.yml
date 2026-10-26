@@ -4,6 +4,11 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      day-main:
+        description: Build against day's main branch instead of the newest release
+        type: boolean
+        default: false
   schedule:
     - cron: "20 6 * * *"
 
@@ -11,6 +16,14 @@ permissions:
   contents: read
 
 jobs:
+  # Retired Day crate names and Rust imports (daybrite/actions check-crate-names).
+  crate-names:
+    name: crate names
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: daybrite/actions/.github/actions/check-crate-names@main
+
   host:
     strategy:
       fail-fast: false
@@ -20,6 +33,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
+      # Day from crates.io, or from main on a push (daybrite/actions day-deps).
+      - uses: daybrite/actions/.github/actions/day-deps@v1
+        with:
+          day-deps: ${{ inputs.day-main && 'main' || 'auto' }}
       - run: cargo fmt --all -- --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo clippy --all-targets --no-default-features -- -D warnings
@@ -42,9 +59,30 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+      # Day from crates.io, or from main on a push (daybrite/actions day-deps).
+      - uses: daybrite/actions/.github/actions/day-deps@v1
+        with:
+          day-deps: ${{ inputs.day-main && 'main' || 'auto' }}
       - uses: daybrite/actions/.github/actions/setup-day-deps@v1
         with:
           target: ${{ matrix.day-target }}
           pack: "false"
       - run: cargo check --target ${{ matrix.target }}
       - run: cargo check --no-default-features --target ${{ matrix.target }}
+
+  # On a version tag, once the checks above passed: the crate to crates.io through Trusted
+  # Publishing (daybrite/actions' publish-crates). Its trusted publisher on crates.io names this
+  # repository, ci.yml, and the environment `release`.
+  publish:
+    name: publish (crates.io)
+    needs: [host, cross-check]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: daybrite/actions/.github/actions/publish-crates@v1
