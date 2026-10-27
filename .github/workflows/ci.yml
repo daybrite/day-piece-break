@@ -1,7 +1,15 @@
 name: ci
 
+# The shared Day library workflow (daybrite/actions' daylib.yml) reads what to check from this
+# repository's manifests: clippy and test on Linux, macOS and Windows, with each toolkit feature on
+# the OS it draws on; clippy for every mobile and web target (the crate has no demo). A push builds
+# against the head of day's main and of every other Day repository it uses; the nightly run builds
+# against the newest releases on crates.io. A version tag publishes the crate once the host and
+# cross-target checks pass.
 on:
   push:
+    branches: ["**"]
+    tags: ["v[0-9]+.[0-9]+.[0-9]+*"]
   pull_request:
   workflow_dispatch:
     inputs:
@@ -16,73 +24,14 @@ permissions:
   contents: read
 
 jobs:
-  # Retired Day crate names and Rust imports (daybrite/actions check-crate-names).
-  crate-names:
-    name: crate names
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: daybrite/actions/.github/actions/check-crate-names@main
-
-  host:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-15, windows-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      # Day from crates.io, or from main on a push (daybrite/actions day-deps).
-      - uses: daybrite/actions/.github/actions/day-deps@v1
-        with:
-          day-deps: ${{ inputs.day-main && 'main' || 'auto' }}
-      - run: cargo fmt --all -- --check
-      - run: cargo clippy --all-targets -- -D warnings
-      - run: cargo clippy --all-targets --no-default-features -- -D warnings
-      - run: cargo test
-      - run: cargo test --no-default-features
-
-  # The UI is pure composition; these compile the OS-specific capture and transport paths.
-  cross-check:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { os: macos-15, target: aarch64-apple-ios, day-target: ios-uikit }
-          - { os: ubuntu-latest, target: aarch64-linux-android, day-target: android-material }
-          - { os: ubuntu-latest, target: aarch64-unknown-linux-ohos, day-target: harmony-arkui }
-          - { os: ubuntu-latest, target: wasm32-unknown-unknown, day-target: web-dom }
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-      # Day from crates.io, or from main on a push (daybrite/actions day-deps).
-      - uses: daybrite/actions/.github/actions/day-deps@v1
-        with:
-          day-deps: ${{ inputs.day-main && 'main' || 'auto' }}
-      - uses: daybrite/actions/.github/actions/setup-day-deps@v1
-        with:
-          target: ${{ matrix.day-target }}
-          pack: "false"
-      - run: cargo check --target ${{ matrix.target }}
-      - run: cargo check --no-default-features --target ${{ matrix.target }}
-
-  # On a version tag, once the checks above passed: the crate to crates.io through Trusted
-  # Publishing (daybrite/actions' publish-crates). Its trusted publisher on crates.io names this
-  # repository, ci.yml, and the environment `release`.
-  publish:
-    name: publish (crates.io)
-    needs: [host, cross-check]
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    environment: release
+  ci:
+    uses: daybrite/actions/.github/workflows/daylib.yml@v1
     permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: daybrite/actions/.github/actions/publish-crates@v1
+      contents: write # the demo's release assets on a version tag
+      pages: write # the project website
+      id-token: write # crates.io Trusted Publishing, and the Pages deploy
+    secrets: inherit
+    with:
+      day-main: ${{ inputs.day-main || false }}
+      # The crate builds without its default features too, and is checked both ways.
+      feature-sets: --no-default-features
