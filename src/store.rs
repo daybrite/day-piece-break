@@ -28,52 +28,29 @@ use std::path::{Path, PathBuf};
 
 use crate::report::{Fields, Kind, Report, SignalInfo, parse_kv};
 
-/// The resolved crash-report directory for `app_id`, honoring an explicit override. Mobile sandbox
-/// roots are already per-app; desktop namespaces under the app id so two apps don't share a dir.
-/// The same layout a day-lite superapp host uses for its package store.
+/// The resolved crash-report directory for `app_id`, honoring an explicit override: `day-break`
+/// in that app's data directory (`day_spec::storage::data_dir_for`), which is a folder named for
+/// the app in the platform's place for app data on desktops and iOS, and the app's own sandbox on
+/// Android and HarmonyOS. The same layout a day-lite superapp host uses for its package store,
+/// and where `day launch`'s crash diagnosis looks.
 pub fn store_dir(app_id: &str, override_dir: Option<&Path>) -> PathBuf {
     if let Some(d) = override_dir {
         return d.to_path_buf();
     }
 
+    // The files dir straight from the Context, which is there even before the host's
+    // environment is.
     #[cfg(target_os = "android")]
     if let Some(base) = crate::java_android::files_dir() {
         return base.join("day-break");
     }
 
+    let base = day_spec::storage::data_dir_for(app_id);
+    // A HarmonyOS host that passed no directory: the ability's fixed sandbox path.
     #[cfg(all(target_os = "linux", target_env = "ohos"))]
-    {
-        // The OHOS sandbox is already per-app, so this path doesn't namespace by app id (the
-        // desktop block below, which does, is unreachable here).
-        let _ = app_id;
-        for var in ["OHOS_APP_FILES_DIR", "HOME", "TMPDIR"] {
-            if let Some(v) = std::env::var_os(var)
-                && !v.is_empty()
-            {
-                return PathBuf::from(v).join("day-break");
-            }
-        }
-        return PathBuf::from("/data/storage/el2/base/haps/entry/files/day-break");
-    }
-
-    // Desktop (and iOS/macOS): namespace under the app id. Computed here, after the mobile
-    // early-returns, so it isn't a dead binding on the sandboxed targets (ohos returns above).
-    #[allow(unreachable_code)]
-    {
-        let slug = slug(app_id);
-        if let Some(home) = std::env::var_os("HOME") {
-            let base = PathBuf::from(home);
-            #[cfg(any(target_os = "ios", target_os = "macos"))]
-            return base
-                .join("Library/Application Support")
-                .join(&slug)
-                .join("day-break");
-            #[allow(unreachable_code)]
-            base.join(format!(".{slug}")).join("day-break")
-        } else {
-            std::env::temp_dir().join(slug).join("day-break")
-        }
-    }
+    let base = base.or_else(|| Some(PathBuf::from("/data/storage/el2/base/haps/entry/files")));
+    base.unwrap_or_else(|| std::env::temp_dir().join(slug(app_id)))
+        .join("day-break")
 }
 
 /// Reduce an app id to a filesystem-safe directory name.

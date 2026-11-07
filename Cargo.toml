@@ -21,19 +21,19 @@ default = ["ui"]
 ui = ["dep:day-pieces", "dep:day-localization-ui", "dep:day-build"]
 
 [dependencies]
-day-core = "0.6"
-day-reactive = "0.6"
+day-core = "0.*"
+day-reactive = "0.*"
 # `Lifecycle` (the WillLaunch/WillTerminate phases the sentinel hooks); a leaf crate day-core
 # already pulls in, so naming it directly adds no compiled crate.
-day-spec = "0.6"
+day-spec = "0.*"
 # Device model + OS name/version for the report (headless, tiny).
-day-part-device = "0.6"
+day-part-device = "0.*"
 # The default upload transport (`RestReporter`) POSTs through the native HTTP stack.
-day-part-http = "0.6"
+day-part-http = "0.*"
 
 # Consent UI (feature `ui`).
-day-pieces = { version = "0.6", optional = true }
-day-localization-ui = { version = "0.6", optional = true }
+day-pieces = { version = "0.*", optional = true }
+day-localization-ui = { version = "0.*", optional = true }
 
 # POSIX signal handlers (SIGSEGV/SIGABRT/…): sigaction + sigaltstack + async-signal-safe writes.
 [target.'cfg(unix)'.dependencies]
@@ -45,13 +45,13 @@ libc = "0.2"
 
 # The consent-banner mock e2e mounts the piece under the mock backend and drives it.
 [dev-dependencies]
-day-mock = "0.6"
-day-pieces = "0.6"
-day-spec = "0.6"
+day-mock = "0.*"
+day-pieces = "0.*"
+day-spec = "0.*"
 
 # Android uncaught-exception handler: a Java shim (staged below) installed via day-platform-android's JNI.
 [target.'cfg(target_os = "android")'.dependencies]
-day-platform-android = "0.6"
+day-platform-android = "0.*"
 
 # --- Android backend contribution (docs/extending.md) ---
 # Stages this crate's Java (the `Thread.setDefaultUncaughtExceptionHandler` shim) into the app's
@@ -60,7 +60,7 @@ day-platform-android = "0.6"
 java = ["platform/android/java"]
 
 [package.metadata.day]
-compat = "0.6"
+compat = "0.*"
 
 [[test]]
 name = "banner"
@@ -68,4 +68,4 @@ required-features = ["ui"]
 
 [build-dependencies]
 # Generates the consent surface's `res::str` from resource/locales/ (feature `ui`).
-day-build = { version = "0.6", optional = true }
+day-build = { version = "0.*", optional = true }
