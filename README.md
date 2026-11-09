@@ -24,4 +24,4 @@ Follow the setup guide for platform requirements and initialization.
 - [Rust API](https://docs.rs/day-piece-crash-reporter/0.1.0/day_piece_crash_reporter/)
 - [Crates.io](https://crates.io/crates/day-piece-crash-reporter)
 
-[Source](https://github.com/daybrite/day-piece-break) · [MPL-2.0 license](https://github.com/daybrite/day-piece-break/blob/main/LICENSE)
+[Source](https://github.com/daybrite/day-piece-crash-reporter) · [MPL-2.0 license](https://github.com/daybrite/day-piece-crash-reporter/blob/main/LICENSE)

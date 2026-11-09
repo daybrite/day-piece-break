@@ -4,7 +4,7 @@ version = "0.1.1"
 edition = "2024"
 rust-version = "1.89"
 description = "Crash capture, local reports, and opt-in delivery for Day apps"
-repository = "https://github.com/daybrite/day-piece-break"
+repository = "https://github.com/daybrite/day-piece-crash-reporter"
 license = "MPL-2.0"
 
 # day-piece-crash-reporter: consent-first crash reporting for Day apps (docs/break.md, DESIGN.md §8.5). An
