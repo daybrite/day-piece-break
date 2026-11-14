@@ -155,7 +155,7 @@ pub(crate) fn install(sig_file: &Path) {
     }
 }
 
-/// Structured exceptions. Returns CONTINUE_SEARCH so Windows Error Reporting still runs: the
+/// Structured exceptions. Returns `CONTINUE_SEARCH` so Windows Error Reporting still runs: the
 /// record is an addition to the platform's own handling, never a replacement for it.
 unsafe extern "system" fn seh_filter(info: *mut ExceptionPointers) -> i32 {
     if HANDLING.swap(true, Ordering::SeqCst) {
@@ -177,7 +177,7 @@ unsafe extern "system" fn seh_filter(info: *mut ExceptionPointers) -> i32 {
         };
         write_record(
             posix_signo(code),
-            code as i64,
+            i64::from(code),
             addr,
             (*rec).exception_address as usize,
         );
@@ -201,6 +201,10 @@ extern "C" fn abort_handler(_sig: i32) {
 }
 
 /// The POSIX signal an exception corresponds to, so one reader serves both platforms.
+#[expect(
+    clippy::match_same_arms,
+    reason = "each exception code keeps its own arm and comment naming the exception"
+)]
 fn posix_signo(code: u32) -> i64 {
     match code {
         0xC000_0005 => POSIX_SIGSEGV,              // ACCESS_VIOLATION
@@ -228,8 +232,8 @@ fn write_record(signo: i64, code: i64, addr: usize, pc: usize) {
     b.kv_u(b"slide=", MODULE_BASE.load(Ordering::Relaxed) as u64);
     // SAFETY: parameterless Win32 query.
     let tid = unsafe { GetCurrentThreadId() };
-    b.kv_u(b"tid=", tid as u64);
-    b.kv_i(b"main=", (tid == MAIN_TID.load(Ordering::Relaxed)) as i64);
+    b.kv_u(b"tid=", u64::from(tid));
+    b.kv_i(b"main=", i64::from(tid == MAIN_TID.load(Ordering::Relaxed)));
     // SAFETY: parameterless Win32 query; saturating so a wrapped tick count cannot underflow.
     let now = unsafe { GetTickCount64() };
     b.kv_u(
@@ -244,7 +248,7 @@ fn write_record(signo: i64, code: i64, addr: usize, pc: usize) {
             file,
             bytes.as_ptr(),
             bytes.len() as u32,
-            &mut written,
+            &raw mut written,
             std::ptr::null_mut(),
         );
         FlushFileBuffers(file);

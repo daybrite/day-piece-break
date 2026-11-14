@@ -15,7 +15,7 @@
 //! reports/report-<ms>.json finalized reports, rotated to `max_reports`
 //! ```
 //!
-//! A crash means WillTerminate never ran, so the sentinel survives; its presence alongside a
+//! A crash means `WillTerminate` never ran, so the sentinel survives; its presence alongside a
 //! handler-written artifact is what distinguishes a crash from a clean exit. A sentinel with no
 //! artifact means the session vanished without any handler firing (an OS kill / battery pull); that
 //! is reported as an *unknown* end, never a crash.
@@ -89,12 +89,12 @@ pub fn write_sentinel(dir: &Path, sid: &str, ctx: &[(&str, String)]) -> std::io:
     std::fs::write(sentinel_path(dir, sid), crate::report::write_kv(ctx))
 }
 
-/// Remove this session's sentinel + its empty raw-signal file (a clean exit, WillTerminate).
+/// Remove this session's sentinel + its empty raw-signal file (a clean exit, `WillTerminate`).
 pub fn clear_session(dir: &Path, sid: &str) {
     let _ = std::fs::remove_file(sentinel_path(dir, sid));
     // The sig file is only meaningful when non-empty; on a clean exit it never got written.
     let p = sig_path(dir, sid);
-    if std::fs::metadata(&p).map(|m| m.len() == 0).unwrap_or(false) {
+    if std::fs::metadata(&p).is_ok_and(|m| m.len() == 0) {
         let _ = std::fs::remove_file(p);
     }
 }
@@ -164,7 +164,7 @@ fn parse_name(name: &str) -> Option<(&'static str, String)> {
     };
     let sid = if has_seq {
         // strip the trailing `-<seq>`
-        rest.rsplit_once('-').map(|(head, _)| head).unwrap_or(rest)
+        rest.rsplit_once('-').map_or(rest, |(head, _)| head)
     } else {
         rest
     };
@@ -192,7 +192,7 @@ fn pid_alive(pid: u32) -> bool {
 /// The end-state of the previous session, surfaced to the app via [`crate::last_session`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SessionEnd {
-    /// The previous session exited cleanly (WillTerminate ran), or there was no previous session.
+    /// The previous session exited cleanly (`WillTerminate` ran), or there was no previous session.
     Clean,
     /// The previous session crashed; a finalized report is available.
     Crashed { kind: Kind, message: String },
@@ -222,14 +222,11 @@ pub fn reconcile(
 ) -> Reconciled {
     let mut groups: std::collections::BTreeMap<String, Group> = std::collections::BTreeMap::new();
 
-    let entries = match std::fs::read_dir(dir) {
-        Ok(e) => e,
-        Err(_) => {
-            return Reconciled {
-                finalized: vec![],
-                last_session: SessionEnd::Clean,
-            };
-        }
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return Reconciled {
+            finalized: vec![],
+            last_session: SessionEnd::Clean,
+        };
     };
     for entry in entries.flatten() {
         let name = entry.file_name();
@@ -341,8 +338,7 @@ fn finalize_group(
         .sig
         .as_ref()
         .and_then(|p| std::fs::metadata(p).ok())
-        .map(|m| m.len() > 0)
-        .unwrap_or(false);
+        .is_some_and(|m| m.len() > 0);
 
     let (kind, fatal, artifact): (Kind, bool, Option<Fields>) = if sig_nonempty {
         let f = g
@@ -606,7 +602,7 @@ mod tests {
         sentinel(&d, "dead-1", DEAD_PID, 1000);
         let r = reconcile(&d, "ownsid", std::process::id(), &ctx(), 5, true);
         assert_eq!(r.last_session, SessionEnd::Unknown);
-        assert!(r.finalized.is_empty());
+        assert_eq!(r.finalized, [] as [std::path::PathBuf; 0]);
         // The stale sentinel is cleaned up.
         assert!(!sentinel_path(&d, "dead-1").exists());
     }
@@ -677,7 +673,7 @@ mod tests {
         let d = tempdir();
         std::fs::write(d.join("contained-c1-1.kv"), "message=caught\n").unwrap();
         let r = reconcile(&d, "own", std::process::id(), &ctx(), 5, false);
-        assert!(r.finalized.is_empty());
+        assert_eq!(r.finalized, [] as [std::path::PathBuf; 0]);
     }
 
     #[test]

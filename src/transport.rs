@@ -5,6 +5,8 @@
 //! the device, and it is always driven by app code from a user action; day-piece-crash-reporter never uploads on
 //! its own. Three built-ins cover the common shapes; an app can implement its own.
 
+use std::fmt::Write as _;
+
 use crate::report::Report;
 
 /// Why an upload did not succeed.
@@ -49,6 +51,7 @@ pub trait Reporter: Send + Sync {
 /// POST the report JSON to an HTTP endpoint via the native stack (`day-part-http`), off the UI
 /// thread. Also the shape a GitHub-issue **proxy** takes: the endpoint receives the report JSON and
 /// opens the issue server-side (docs/break.md), keeping any repo token off the device.
+#[must_use]
 pub struct RestReporter {
     url: String,
     name: String,
@@ -114,7 +117,7 @@ impl GithubIssueReporter {
 }
 
 impl Reporter for GithubIssueReporter {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "GitHub"
     }
     fn describe(&self) -> String {
@@ -140,6 +143,7 @@ impl Reporter for GithubIssueReporter {
 
 /// Open the user's mail client with a prefilled message (via the `open_url` duty and a `mailto:`
 /// URL). The user sends the mail. Body is truncated to a mail-client-friendly length.
+#[must_use]
 pub struct EmailReporter {
     to: String,
     subject_prefix: String,
@@ -161,7 +165,7 @@ impl EmailReporter {
 }
 
 impl Reporter for EmailReporter {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "email"
     }
     fn describe(&self) -> String {
@@ -212,9 +216,11 @@ fn urlencode(s: &str) -> String {
     for &b in s.as_bytes() {
         match b {
             b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
-                out.push(b as char)
+                out.push(b as char);
             }
-            _ => out.push_str(&format!("%{b:02X}")),
+            _ => {
+                let _ = write!(out, "%{b:02X}");
+            }
         }
     }
     out

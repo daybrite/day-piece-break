@@ -10,7 +10,7 @@
 //! - day-core contains it → [`observe_contained`] runs on the same thread, synchronously, right
 //!   after the catch, and renames this thread's just-written `pending-*` to `contained-*`.
 //! - the process actually dies → the `pending-*` survives and next-launch reconcile finalizes it
-//!   as a fatal panic (the sentinel is still present because WillTerminate never ran).
+//!   as a fatal panic (the sentinel is still present because `WillTerminate` never ran).
 
 use std::cell::RefCell;
 use std::path::PathBuf;

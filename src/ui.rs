@@ -143,7 +143,7 @@ mod tests {
                 .collect()
         };
         let en = keys(include_str!("../resource/locales/en/app.ftl"));
-        assert!(!en.is_empty());
+        assert_ne!(en, [] as [std::string::String; 0]);
         for (loc, src) in [
             ("fr", include_str!("../resource/locales/fr/app.ftl")),
             ("ar", include_str!("../resource/locales/ar/app.ftl")),

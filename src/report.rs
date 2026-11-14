@@ -157,7 +157,7 @@ impl Report {
     pub fn to_json(&self) -> String {
         let mut s = String::with_capacity(1024);
         s.push('{');
-        json_num(&mut s, "schema", SCHEMA as u64, true);
+        json_num(&mut s, "schema", u64::from(SCHEMA), true);
         json_str(&mut s, "kind", &self.kind_str, false);
         json_bool(&mut s, "fatal", self.fatal, false);
         // app { }
@@ -218,7 +218,7 @@ pub fn parse_json(s: &str) -> Option<Report> {
     let flat = json_flatten(s)?;
     let g = |k: &str| flat.get(k).cloned().unwrap_or_default();
     let gn = |k: &str| flat.get(k).and_then(|v| v.parse::<u64>().ok()).unwrap_or(0);
-    let gb = |k: &str| flat.get(k).map(|v| v == "true").unwrap_or(false);
+    let gb = |k: &str| flat.get(k).is_some_and(|v| v == "true");
 
     let signal = if flat.contains_key("signal.signo") {
         Some(SignalInfo {
@@ -289,7 +289,6 @@ fn read_object(
             }
             b',' => {
                 *i += 1;
-                continue;
             }
             b'"' => {
                 let key = read_string(b, i)?;
@@ -406,12 +405,11 @@ fn kv_unescape(v: &str) -> String {
             match chars.next() {
                 Some('n') => out.push('\n'),
                 Some('r') => out.push('\r'),
-                Some('\\') => out.push('\\'),
+                Some('\\') | None => out.push('\\'),
                 Some(other) => {
                     out.push('\\');
                     out.push(other);
                 }
-                None => out.push('\\'),
             }
         } else {
             out.push(c);

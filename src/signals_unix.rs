@@ -92,7 +92,7 @@ pub(crate) fn install(sig_file: &Path) {
                 ss_flags: 0,
                 ss_size: size,
             };
-            libc::sigaltstack(&ss, null_mut());
+            libc::sigaltstack(&raw const ss, null_mut());
         }
 
         let mut sa: libc::sigaction = std::mem::zeroed();
@@ -100,17 +100,17 @@ pub(crate) fn install(sig_file: &Path) {
         let h: extern "C" fn(libc::c_int, *mut libc::siginfo_t, *mut libc::c_void) = handler;
         sa.sa_sigaction = h as usize;
         sa.sa_flags = libc::SA_SIGINFO | libc::SA_ONSTACK;
-        libc::sigfillset(&mut sa.sa_mask);
+        libc::sigfillset(&raw mut sa.sa_mask);
         for (i, &sig) in SIGS.iter().enumerate() {
             let mut prev: libc::sigaction = std::mem::zeroed();
-            if libc::sigaction(sig, &sa, &mut prev) == 0 {
+            if libc::sigaction(sig, &raw const sa, &raw mut prev) == 0 {
                 *PREV.0[i].get() = MaybeUninit::new(prev);
             }
         }
     }
 }
 
-extern "C" fn handler(sig: libc::c_int, info: *mut libc::siginfo_t, _uc: *mut libc::c_void) {
+extern "C" fn handler(sig: libc::c_int, info: *mut libc::siginfo_t, uc: *mut libc::c_void) {
     // A nested fault while we're mid-record: don't touch the file again; restore and re-raise.
     if HANDLING.swap(true, Ordering::SeqCst) {
         unsafe { chain(sig) };
@@ -119,17 +119,17 @@ extern "C" fn handler(sig: libc::c_int, info: *mut libc::siginfo_t, _uc: *mut li
     let fd = CRASH_FD.load(Ordering::Acquire);
     if fd >= 0 {
         let mut b = Buf::new();
-        b.kv_i(b"sig=", sig as i64);
+        b.kv_i(b"sig=", i64::from(sig));
         // SAFETY: the kernel hands us a valid siginfo for SA_SIGINFO handlers.
         unsafe {
-            b.kv_i(b"code=", (*info).si_code as i64);
+            b.kv_i(b"code=", i64::from((*info).si_code));
             b.kv_u(b"addr=", si_addr(info) as u64);
         }
-        b.kv_u(b"pc=", pc_from_ucontext(_uc) as u64);
+        b.kv_u(b"pc=", pc_from_ucontext(uc) as u64);
         b.kv_u(b"slide=", SLIDE.load(Ordering::Relaxed) as u64);
         let tid = raw_tid();
         b.kv_i(b"tid=", tid);
-        b.kv_i(b"main=", (tid == MAIN_TID.load(Ordering::Relaxed)) as i64);
+        b.kv_i(b"main=", i64::from(tid == MAIN_TID.load(Ordering::Relaxed)));
         b.kv_u(b"up_ms=", uptime_ms());
         // SAFETY: fd is a valid open descriptor; write/fsync are async-signal-safe.
         unsafe {
@@ -152,16 +152,16 @@ unsafe fn chain(sig: libc::c_int) {
         // Unknown signal: fall back to default.
         let mut dfl: libc::sigaction = unsafe { std::mem::zeroed() };
         dfl.sa_sigaction = libc::SIG_DFL;
-        unsafe { libc::sigaction(sig, &dfl, null_mut()) };
+        unsafe { libc::sigaction(sig, &raw const dfl, null_mut()) };
     }
     match sig {
         libc::SIGABRT | libc::SIGTRAP => {
             // Not instruction-restarting: unblock and re-raise so the restored handler sees it.
             let mut set: libc::sigset_t = unsafe { std::mem::zeroed() };
             unsafe {
-                libc::sigemptyset(&mut set);
-                libc::sigaddset(&mut set, sig);
-                libc::pthread_sigmask(libc::SIG_UNBLOCK, &set, null_mut());
+                libc::sigemptyset(&raw mut set);
+                libc::sigaddset(&raw mut set, sig);
+                libc::pthread_sigmask(libc::SIG_UNBLOCK, &raw const set, null_mut());
                 libc::raise(sig);
             }
         }
@@ -229,7 +229,7 @@ impl Buf {
 
 unsafe fn write_all(fd: libc::c_int, mut buf: &[u8]) {
     while !buf.is_empty() {
-        let n = unsafe { libc::write(fd, buf.as_ptr() as *const libc::c_void, buf.len()) };
+        let n = unsafe { libc::write(fd, buf.as_ptr().cast::<libc::c_void>(), buf.len()) };
         if n <= 0 {
             // EINTR → retry; anything else → give up (we're crashing anyway).
             if n < 0 && std::io::Error::last_os_error().raw_os_error() == Some(libc::EINTR) {
@@ -251,7 +251,7 @@ unsafe fn si_addr(info: *mut libc::siginfo_t) -> *mut libc::c_void {
 fn mono_ns() -> u64 {
     let mut ts: libc::timespec = unsafe { std::mem::zeroed() };
     // SAFETY: valid timespec out-param; CLOCK_MONOTONIC is async-signal-safe.
-    unsafe { libc::clock_gettime(libc::CLOCK_MONOTONIC, &mut ts) };
+    unsafe { libc::clock_gettime(libc::CLOCK_MONOTONIC, &raw mut ts) };
     (ts.tv_sec as u64) * 1_000_000_000 + (ts.tv_nsec as u64)
 }
 
@@ -271,7 +271,7 @@ fn raw_tid() -> i64 {
     {
         let mut tid: u64 = 0;
         // SAFETY: null pthread_t means the current thread; valid out-param.
-        unsafe { libc::pthread_threadid_np(0, &mut tid) };
+        unsafe { libc::pthread_threadid_np(0, &raw mut tid) };
         tid as i64
     }
     #[cfg(not(any(
@@ -296,12 +296,12 @@ fn load_slide() -> usize {
             data: *mut libc::c_void,
         ) -> libc::c_int {
             // First callback is the main program; record its base and stop.
-            unsafe { *(data as *mut usize) = (*info).dlpi_addr as usize };
+            unsafe { *data.cast::<usize>() = (*info).dlpi_addr as usize };
             1
         }
         let mut base: usize = 0;
         // SAFETY: standard dl_iterate_phdr with a matching callback + out-param.
-        unsafe { libc::dl_iterate_phdr(Some(cb), &mut base as *mut usize as *mut libc::c_void) };
+        unsafe { libc::dl_iterate_phdr(Some(cb), (&raw mut base).cast::<libc::c_void>()) };
         base
     }
     #[cfg(not(any(target_os = "linux", target_os = "android")))]
@@ -310,7 +310,7 @@ fn load_slide() -> usize {
     }
 }
 
-/// Program counter at the fault, extracted from the ucontext. Linux/Android x86_64 + aarch64 are
+/// Program counter at the fault, extracted from the ucontext. Linux/Android `x86_64` + aarch64 are
 /// supported; other targets return 0 (the address is a nice-to-have, not required).
 #[allow(unused_variables)]
 fn pc_from_ucontext(uc: *mut libc::c_void) -> usize {
@@ -319,7 +319,7 @@ fn pc_from_ucontext(uc: *mut libc::c_void) -> usize {
         target_arch = "x86_64"
     ))]
     unsafe {
-        let uc = uc as *mut libc::ucontext_t;
+        let uc = uc.cast::<libc::ucontext_t>();
         (*uc).uc_mcontext.gregs[libc::REG_RIP as usize] as usize
     }
     #[cfg(all(
@@ -327,7 +327,7 @@ fn pc_from_ucontext(uc: *mut libc::c_void) -> usize {
         target_arch = "aarch64"
     ))]
     unsafe {
-        let uc = uc as *mut libc::ucontext_t;
+        let uc = uc.cast::<libc::ucontext_t>();
         (*uc).uc_mcontext.pc as usize
     }
     #[cfg(not(all(

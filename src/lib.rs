@@ -108,6 +108,7 @@ type Redactor = Box<dyn Fn(&mut String) + Send + Sync>;
 /// Crash-reporting configuration. Build with [`Config::new`], then [`Config::init`].
 // On wasm32 `init` arms nothing, so the builder's fields are set but never read there.
 #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
+#[must_use]
 pub struct Config {
     app_id: Option<String>,
     app_version: Option<String>,
@@ -177,7 +178,7 @@ impl Config {
         self
     }
     /// Attempt an in-handler frame-pointer backtrace on a native fault (default false; reserved,
-    /// see docs/break.md). Off by default because release x86_64 may omit frame pointers.
+    /// see docs/break.md). Off by default because release `x86_64` may omit frame pointers.
     pub fn signal_backtrace(mut self, yes: bool) -> Config {
         self.signal_backtrace = yes;
         self
@@ -201,14 +202,19 @@ impl Config {
     /// uncaught-exception handler). Idempotent-safe: a second call returns [`InitError::AlreadyInitialized`].
     /// On wasm32 this is a graceful no-op: nothing is armed and every query reports the empty
     /// state.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InitError::Dir`] when the report directory cannot be created, and
+    /// [`InitError::AlreadyInitialized`] on a second call in one process.
     pub fn init(self) -> Result<(), InitError> {
         #[cfg(target_arch = "wasm32")]
         {
             // No crash capture on the web target: there are no signals or pids, and std's
             // fs/temp-dir surfaces are unsupported there. Arm nothing (every query then reports
             // the empty state) but keep the single-shot contract so call sites behave the same.
-            let _ = self;
             static ARMED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+            let _ = self;
             if ARMED.swap(true, Ordering::SeqCst) {
                 return Err(InitError::AlreadyInitialized);
             }
@@ -339,6 +345,10 @@ impl Config {
 }
 
 /// `Config::new().init()`.
+///
+/// # Errors
+///
+/// Returns what [`Config::init`] returns.
 pub fn init() -> Result<(), InitError> {
     Config::new().init()
 }
@@ -349,8 +359,7 @@ pub fn init() -> Result<(), InitError> {
 pub fn last_session() -> SessionEnd {
     STATE
         .get()
-        .map(|s| s.last_session.clone())
-        .unwrap_or(SessionEnd::Clean)
+        .map_or(SessionEnd::Clean, |s| s.last_session.clone())
 }
 
 /// The crash-report directory, if [`Config::init`] has run.
@@ -382,8 +391,7 @@ fn load_meta(path: &Path) -> Option<ReportMeta> {
                 Some(Kind::Signal) => r
                     .signal
                     .as_ref()
-                    .map(|s| s.name.clone())
-                    .unwrap_or_else(|| "signal".into()),
+                    .map_or_else(|| "signal".into(), |s| s.name.clone()),
                 _ => r.kind_str.clone(),
             }
         } else {
@@ -486,7 +494,7 @@ pub fn send(meta: &ReportMeta, on_done: impl FnOnce(Result<(), SendError>) + Sen
     // The transport may call `done` off-thread. Signals aren't `Send`, so the pending refresh rides
     // a `Setter` (day-reactive's cross-thread write path, which marshals to the main thread); the
     // app's `on_done` is `Send` and may run on either thread; the consent UI keeps it Setter-based.
-    let pending_setter = PENDING.with(|p| p.borrow().map(|s| s.setter()));
+    let pending_setter = PENDING.with(|p| p.borrow().map(day_reactive::Signal::setter));
     reporter.send(
         &report,
         Box::new(move |result| {
@@ -600,8 +608,7 @@ fn resolve(explicit: Option<String>, baked_var: &str, runtime_var: &str) -> Stri
 fn unix_millis() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_millis() as u64)
-        .unwrap_or(0)
+        .map_or(0, |d| d.as_millis() as u64)
 }
 
 /// The current UI locale (the launcher sets `DAY_LOCALE`; default `"en"`). Kept env-based so the
@@ -646,7 +653,7 @@ mod tests {
         let s = STATE.get().unwrap();
         // `|| true` here made this assert nothing at all. The dir is wiped above, so a freshly
         // armed store holds no reports, and the call proves it copes with an empty one.
-        assert!(store::report_paths(&s.dir).is_empty());
+        assert_eq!(store::report_paths(&s.dir), [] as [std::path::PathBuf; 0]);
         // Second init is rejected.
         assert!(matches!(
             Config::new().dir(&d).init(),

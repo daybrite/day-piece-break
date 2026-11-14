@@ -145,7 +145,7 @@ fn segv_child_produces_fatal_signal_report() {
     let out = run_child("segv", &d.0);
     let sig = out.status.signal();
     assert!(
-        matches!(sig, Some(libc::SIGSEGV) | Some(libc::SIGBUS)),
+        matches!(sig, Some(libc::SIGSEGV | libc::SIGBUS)),
         "expected SIGSEGV/SIGBUS, got {sig:?}"
     );
     let (kind, json) = reconcile(&d.0);
